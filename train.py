@@ -1,4 +1,4 @@
-from groundingdino.util.train import load_model, load_image,train_image, annotate
+from utils.train import load_model, load_image, train_image, annotate
 import cv2
 import os
 import json
@@ -7,19 +7,30 @@ import torch
 from collections import defaultdict
 import torch.optim as optim
 
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+print("device: {}".format(device))
+
 # Model
-model = load_model("groundingdino/config/GroundingDINO_SwinT_OGC.py", "weights/groundingdino_swint_ogc.pth")
+# model = load_model("groundingdino/config/GroundingDINO_SwinT_OGC.py", "weights/groundingdino_swint_ogc.pth")
+# model = load_model(model_config_path="D:/PycharmProjects/GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py",
+#                    model_checkpoint_path="D:/PycharmProjects/GroundingDINO/weights/groundingdino_swint_ogc.pth",
+#                    device=device)
+
+model = load_model(model_config_path="D:/PycharmProjects/GroundingDINO/groundingdino/config/GroundingDINO_SwinB_cfg.py",
+                   model_checkpoint_path="D:/PycharmProjects/GroundingDINO/weights/groundingdino_swinb_cogcoor.pth",
+                   device=device)
 
 # Dataset paths
-images_files=sorted(os.listdir("multimodal-data/images"))
-ann_file="multimodal-data/annotation/annotation.csv"
+images_files = sorted(os.listdir("multimodal-data/images"))
+ann_file = "multimodal-data/annotation/annotation.csv"
+
 
 def draw_box_with_label(image, output_path, coordinates, label, color=(0, 0, 255), thickness=2, font_scale=0.5):
     """
     Draw a box and a label on an image using OpenCV.
 
     Parameters:
-    - image (numpyarray): input image.
+    - image (numpy array): input image.
     - output_path (str): Path to save the image with the box and label.
     - coordinates (tuple): A tuple (x1, y1, x2, y2) indicating the top-left and bottom-right corners of the box.
     - label (str): The label text to be drawn next to the box.
@@ -27,73 +38,73 @@ def draw_box_with_label(image, output_path, coordinates, label, color=(0, 0, 255
     - thickness (int, optional): Thickness of the box's border. Default is 2 pixels.
     - font_scale (float, optional): Font scale for the label. Default is 0.5.
     """
-    
+
     # Draw the rectangle
     cv2.rectangle(image, (coordinates[0], coordinates[1]), (coordinates[2], coordinates[3]), color, thickness)
-    
+
     # Define a position for the label (just above the top-left corner of the rectangle)
-    label_position = (coordinates[0], coordinates[1]-10)
-    
+    label_position = (coordinates[0], coordinates[1] - 10)
+
     # Draw the label
     cv2.putText(image, label, label_position, cv2.FONT_HERSHEY_SIMPLEX, font_scale, color, thickness, cv2.LINE_AA)
-    
+
     # Save the modified image
     cv2.imwrite(output_path, image)
 
-def draw_box_with_label(image, output_path, coordinates, label, color=(0, 0, 255), thickness=2, font_scale=0.5):
-    """
-    Draw a box and a label on an image using OpenCV.
 
-    Parameters:
-    - image (str):  Input image.
-    - output_path (str): Path to save the image with the box and label.
-    - coordinates (tuple): A tuple (x1, y1, x2, y2) indicating the top-left and bottom-right corners of the box.
-    - label (str): The label text to be drawn next to the box.
-    - color (tuple, optional): Color of the box and label in BGR format. Default is red (0, 0, 255).
-    - thickness (int, optional): Thickness of the box's border. Default is 2 pixels.
-    - font_scale (float, optional): Font scale for the label. Default is 0.5.
-    """
-    
-    # Draw the rectangle
-    cv2.rectangle(image, (coordinates[0], coordinates[1]), (coordinates[2], coordinates[3]), color, thickness)
-    
-    # Define a position for the label (just above the top-left corner of the rectangle)
-    label_position = (coordinates[0], coordinates[1]-10)
-    
-    # Draw the label
-    cv2.putText(image, label, label_position, cv2.FONT_HERSHEY_SIMPLEX, font_scale, color, thickness, cv2.LINE_AA)
-    
-    # Save the modified image
-    cv2.imwrite(output_path, image)
-
+# def draw_box_with_label(image, output_path, coordinates, label, color=(0, 0, 255), thickness=2, font_scale=0.5):
+#     """
+#     Draw a box and a label on an image using OpenCV.
+#
+#     Parameters:
+#     - image (str):  Input image.
+#     - output_path (str): Path to save the image with the box and label.
+#     - coordinates (tuple): A tuple (x1, y1, x2, y2) indicating the top-left and bottom-right corners of the box.
+#     - label (str): The label text to be drawn next to the box.
+#     - color (tuple, optional): Color of the box and label in BGR format. Default is red (0, 0, 255).
+#     - thickness (int, optional): Thickness of the box's border. Default is 2 pixels.
+#     - font_scale (float, optional): Font scale for the label. Default is 0.5.
+#     """
+#
+#     # Draw the rectangle
+#     cv2.rectangle(image, (coordinates[0], coordinates[1]), (coordinates[2], coordinates[3]), color, thickness)
+#
+#     # Define a position for the label (just above the top-left corner of the rectangle)
+#     label_position = (coordinates[0], coordinates[1] - 10)
+#
+#     # Draw the label
+#     cv2.putText(image, label, label_position, cv2.FONT_HERSHEY_SIMPLEX, font_scale, color, thickness, cv2.LINE_AA)
+#
+#     # Save the modified image
+#     cv2.imwrite(output_path, image)
 
 
 def read_dataset(ann_file):
-    ann_Dict= defaultdict(lambda: defaultdict(list))
+    ann_Dict = defaultdict(lambda: defaultdict(list))
     with open(ann_file) as file_obj:
-        ann_reader= csv.DictReader(file_obj)  
+        ann_reader = csv.DictReader(file_obj)
         # Iterate over each row in the csv file
         # using reader object
         for row in ann_reader:
-            #print(row)
-            img_n=os.path.join("multimodal-data/images",row['image_name'])
-            x1=int(row['bbox_x'])
-            y1=int(row['bbox_y'])
-            x2=x1+int(row['bbox_width'])
-            y2=y1+int(row['bbox_height'])
-            label=row['label_name']
-            ann_Dict[img_n]['boxes'].append([x1,y1,x2,y2])
+            # print(row)
+            img_n = os.path.join("multimodal-data/images", row['image_name'])
+            x1 = int(row['bbox_x'])
+            y1 = int(row['bbox_y'])
+            x2 = x1 + int(row['bbox_width'])
+            y2 = y1 + int(row['bbox_height'])
+            label = row['label_name']
+            ann_Dict[img_n]['boxes'].append([x1, y1, x2, y2])
             ann_Dict[img_n]['captions'].append(label)
     return ann_Dict
 
 
-def train(model, ann_file, epochs=1, save_path='weights/model_weights',save_epoch=50):
+def train(model, ann_file, epochs=1, save_path='weights/model_weights', save_epoch=50):
     # Read Dataset
     ann_Dict = read_dataset(ann_file)
-    
+
     # Add optimizer
     optimizer = optim.Adam(model.parameters(), lr=1e-5)
-    
+
     # Ensure the model is in training mode
     model.train()
 
@@ -106,7 +117,7 @@ def train(model, ann_file, epochs=1, save_path='weights/model_weights',save_epoc
 
             # Zero the gradients
             optimizer.zero_grad()
-            
+
             # Call the training function for each image and its annotations
             loss = train_image(
                 model=model,
@@ -114,23 +125,24 @@ def train(model, ann_file, epochs=1, save_path='weights/model_weights',save_epoc
                 image=image,
                 caption_objects=captions,
                 box_target=bxs,
+                device=device
             )
-            
+
             # Backpropagate and optimize
             loss.backward()
             optimizer.step()
-            
+
             total_loss += loss.item()  # Accumulate the loss
-            print(f"Processed image {idx+1}/{len(ann_Dict)}, Loss: {loss.item()}")
+            print(f"Processed image {idx + 1}/{len(ann_Dict)}, Loss: {loss.item()}")
 
         # Print the average loss for the epoch
-        print(f"Epoch {epoch+1}/{epochs}, Average Loss: {total_loss / len(ann_Dict)}")
-        if (epoch%save_epoch)==0:
+        print(f"Epoch {epoch + 1}/{epochs}, Average Loss: {total_loss / len(ann_Dict)}")
+        if ((epoch + 1) % save_epoch) == 0:
             # Save the model's weights after each epoch
-            torch.save(model.state_dict(), f"{save_path}{epoch}.pth")
-            print(f"Model weights saved to {save_path}{epoch}.pth")
+            torch.save(model.state_dict(), f"{save_path}{epoch + 1}.pth")
+            print(f"Model weights saved to {save_path}{epoch + 1}.pth")
 
 
-
-if __name__=="__main__":
-    train(model=model, ann_file=ann_file, epochs=2000, save_path='weights/model_weights')
+if __name__ == "__main__":
+    # train(model=model, ann_file=ann_file, epochs=2000, save_path='weights/model_weights')
+    train(model=model, ann_file=ann_file, epochs=500, save_path='weights/model_weights')

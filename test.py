@@ -36,7 +36,7 @@ def process_image(
         text_threshold=0.40
 ):
     model = load_model(model_config, model_weights)
-    #model.load_state_dict(torch.load(state_dict_path))
+    # model.load_state_dict(torch.load(state_dict_path))
     image_source, image = load_image(image_path)
 
     boxes, logits, phrases = predict(
@@ -56,6 +56,6 @@ def process_image(
 
 
 if __name__ == "__main__":
-    #model_weights="weights/groundingdino_swint_ogc.pth"
-    model_weights="weights/model_weights2000.pth"
+    # model_weights="weights/groundingdino_swint_ogc.pth"
+    model_weights = "weights/model_weights2000.pth"
     process_image(model_weights=model_weights)
