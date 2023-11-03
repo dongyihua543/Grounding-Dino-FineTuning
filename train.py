@@ -98,7 +98,7 @@ def read_dataset(ann_file):
     return ann_Dict
 
 
-def train(model, ann_file, epochs=1, save_path='weights/model_weights', save_epoch=50):
+def train(model, ann_file, epochs=1, save_path='weights/model_weights', save_epoch=5):
     # Read Dataset
     ann_Dict = read_dataset(ann_file)
 
@@ -139,10 +139,12 @@ def train(model, ann_file, epochs=1, save_path='weights/model_weights', save_epo
         print(f"Epoch {epoch + 1}/{epochs}, Average Loss: {total_loss / len(ann_Dict)}")
         if ((epoch + 1) % save_epoch) == 0:
             # Save the model's weights after each epoch
-            torch.save(model.state_dict(), f"{save_path}{epoch + 1}.pth")
-            print(f"Model weights saved to {save_path}{epoch + 1}.pth")
+            # torch.save(model.state_dict(), f"{save_path}{epoch + 1}.pth")
+            # print(f"Model weights saved to {save_path}{epoch + 1}.pth")
+            torch.save(model.state_dict(), f"{save_path}.pth")
+            print(f"Model weights saved to {save_path}.pth")
 
 
 if __name__ == "__main__":
     # train(model=model, ann_file=ann_file, epochs=2000, save_path='weights/model_weights')
-    train(model=model, ann_file=ann_file, epochs=500, save_path='weights/model_weights')
+    train(model=model, ann_file=ann_file, epochs=30, save_path='weights/model_weights')
