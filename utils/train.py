@@ -65,7 +65,7 @@ def train_image(model,
                 caption_objects: list,
                 box_target: list,
                 device: str = "cuda"):
-    
+
     def get_object_positions(tokenized, caption_objects):
         positions_dict = {}
         for obj_name in set(caption_objects):
@@ -89,6 +89,7 @@ def train_image(model,
     outputs = model(image[None], captions=[caption])
     logits = outputs["pred_logits"][0]
     boxes = outputs["pred_boxes"][0]
+    logits_temp = logits[:20, :30]
 
     # Bounding box losses
     h, w, _ = image_source.shape
@@ -112,6 +113,7 @@ def train_image(model,
         targets_logits_list.append(target)
 
     targets_logits = torch.stack(targets_logits_list, dim=0)
+    targets_logits_temp = targets_logits[:20, :30]
     cls_loss = focal_loss(selected_logits, targets_logits)
     # print(f"Output keys are {outputs.keys()}")
     print(f"Regression and Classification loss are {reg_loss} and {cls_loss}")
